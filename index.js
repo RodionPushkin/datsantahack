@@ -77,12 +77,12 @@ const updateSnowAreas = (snowareas = [{r: null, x: null, y: null}]) => {
     const y = snowareas[i].y
     snowareas[i].length = length
     snowareas[i].aura = [
-      {id: 1,x: x, y: y - length},
-      {id: 2,x: x + length, y: Math.round(y - (length / 2))},
-      {id: 3,x:x + length, y:Math.round(y + (length / 2))},
-      {id: 4,x:x, y:y + length},
-      {id: 5,x:x - length, y:Math.round(y + (length / 2))},
-      {id: 6,x:x - length, y:Math.round(y - (length / 2))},
+      {id: 1, x: x, y: y - length},
+      {id: 2, x: x + length, y: Math.round(y - (length / 2))},
+      {id: 3, x: x + length, y: Math.round(y + (length / 2))},
+      {id: 4, x: x, y: y + length},
+      {id: 5, x: x - length, y: Math.round(y + (length / 2))},
+      {id: 6, x: x - length, y: Math.round(y - (length / 2))},
     ]
   }
   console.timeEnd('updateSnowAreas')
@@ -114,6 +114,16 @@ const bubbleSortByWeight = (children = [{x: null, y: null}], gifts = [{id: null,
       }
     }
   }
+  for (let i = 0; i < children.length; i++) {
+    children[i].graph = []
+    const otherChildrens = children.filter(child => child.id != children[i].id)
+    for (let j = 0; j < otherChildrens.length; j++) {
+      children[i].graph.push({
+        child: otherChildrens[j],
+        distance: getDistance(children[i].x, children[i].y, otherChildrens[j].x, otherChildrens[j].y)
+      })
+    }
+  }
   console.timeEnd('bubbleSortWeight')
   return {children, gifts};
 }
@@ -137,11 +147,11 @@ const bubbleSortByDistance = (children = [{x: null, y: null}], gifts = [{id: nul
 }
 // console.log(bubbleSortByDistance(info.children, info.gifts).children[0])
 
-const walkAvoidStorm = (storm,previousRoute)=>{
+const walkAvoidStorm = (storm, previousRoute) => {
   let routes = []
-  storm.aura = storm.aura.filter(aura=> aura.x <= 10000 && aura.y <= 10000 && aura.x >= 0 && aura.y >= 0)
+  storm.aura = storm.aura.filter(aura => aura.x <= 10000 && aura.y <= 10000 && aura.x >= 0 && aura.y >= 0)
   storm.aura.forEach((aura, index) => {
-    storm.aura[index].distance = getDistance(previousRoute.x, previousRoute.y,aura.x,aura.y)
+    storm.aura[index].distance = getDistance(previousRoute.x, previousRoute.y, aura.x, aura.y)
   })
   for (let i = 0, endI = storm.aura.length - 1; i < endI; i++) {
     for (let j = 0, endJ = endI - i; j < endJ; j++) {
@@ -152,12 +162,12 @@ const walkAvoidStorm = (storm,previousRoute)=>{
       }
     }
   }
-  let aura1,aura2,aura3
-  if(storm.aura.length > 1){
+  let aura1, aura2, aura3
+  if (storm.aura.length > 1) {
     aura1 = storm.aura[0]
     routes.push({"x": aura1.x, "y": aura1.y})
   }
-  if(storm.aura.length > 2){
+  if (storm.aura.length > 2) {
     aura2 = storm.aura[1]
     routes.push({"x": aura2.x, "y": aura2.y})
   }
@@ -201,7 +211,7 @@ const main = async () => {
   console.time('deadsanta')
   info.snowAreas = updateSnowAreas(info.snowAreas)
   info.children = updateChildren(info.children, info.gifts)
-  const sorted = bubbleSortByDistance(info.children, info.gifts)
+  const sorted = bubbleSortByWeight(info.children, info.gifts)
   info.gifts = sorted.gifts
   info.children = sorted.children
   const listOfBags = []
@@ -209,6 +219,7 @@ const main = async () => {
   let currentWeight = 0
   let currentVolume = 0
   let temporaryBag = []
+
   for (let i = 0; i < info.gifts.length; i++) {
     let previousRoute = listOfRoutes.length > 0 ? listOfRoutes[listOfRoutes.length - 1] : [{x: 0, y: 0}]
     let touchFromPreviousRoute = isTouchingSnowArea(previousRoute.x, previousRoute.y, 0, 0)
@@ -217,9 +228,9 @@ const main = async () => {
       temporaryBag = []
       currentWeight = 0
       currentVolume = 0
-      listOfRoutes.push({"x": 0, "y": 0})
-      if (touchFromPreviousRoute[0]){
-        let routes = walkAvoidStorm(touchFromPreviousRoute[1],previousRoute)
+      // listOfRoutes.push({"x": 0, "y": 0})
+      if (touchFromPreviousRoute[0]) {
+        let routes = walkAvoidStorm(touchFromPreviousRoute[1], previousRoute)
         // console.log(routes)
         listOfRoutes.push(...routes)
         previousRoute = listOfRoutes[listOfRoutes.length - 1]
@@ -230,8 +241,8 @@ const main = async () => {
     currentWeight += info.gifts[i].weight
     currentVolume += info.gifts[i].volume
 
-    if (touchFromPreviousRoute[0]){
-      let routes = walkAvoidStorm(touchFromPreviousRoute[1],previousRoute)
+    if (touchFromPreviousRoute[0]) {
+      let routes = walkAvoidStorm(touchFromPreviousRoute[1], previousRoute)
       // console.log(routes)
       listOfRoutes.push(...routes)
       previousRoute = listOfRoutes[listOfRoutes.length - 1]
@@ -244,10 +255,32 @@ const main = async () => {
   if (temporaryBag.length > 0) {
     listOfBags.push(temporaryBag)
   }
-  console.log(listOfBags.length, listOfRoutes.length)
-  listOfRoutes.forEach(item=>{
-    console.log(item,",")
+
+
+  const fs = require("fs")
+  const path = require("path")
+  fs.readFile('data.js', (err, data) => {
+    if (err) {
+      console.log(err)
+      fs.appendFile('data.js', `let json = ${JSON.stringify(listOfRoutes)}`, (err2) => {
+        if (err2) console.log(err2)
+        console.log("saved")
+      })
+    } else {
+      data = data.toString('utf8');
+      if (data != `let json = ${JSON.stringify(listOfRoutes)}`) {
+        fs.unlink('data.js', function (err1) {
+          if (err1) console.log(err1);
+          console.log("sdfs")
+          fs.appendFile('data.js', `let json = ${JSON.stringify(listOfRoutes)}`, (err2) => {
+            if (err2) console.log(err2)
+            console.log("saved")
+          })
+        });
+      }
+    }
   })
+  console.log(listOfBags.length, listOfRoutes.length)
   // let query = await sendData(listOfBags, listOfRoutes)
   // console.log(query)
   // if(query.roundId && query.roundId.length > 1){
@@ -260,7 +293,6 @@ const main = async () => {
   //     })
   //   },30000)
   // }
-
   console.timeEnd('deadsanta')
 }
 main()

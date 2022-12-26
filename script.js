@@ -1,4 +1,4 @@
-const json = []
+console.log(json)
 const storms = [{
   "r": 369,
   "x": 4722,
@@ -177,5 +177,5 @@ function setup() {
   }
 }
 function draw() {
-  
+
 }
