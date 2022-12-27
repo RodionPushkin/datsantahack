@@ -198,15 +198,18 @@ const generateGraph = () => {
     }
   }
   info.graphPoints.push({x: 2500, y: 2500})
+  info.graphPoints.push({x: data.santa_base.x, y: data.santa_base.y})
   info.graphPoints.push({x: 7500, y: 2500})
   info.graphPoints.push({x: 2500, y: 7500})
   info.graphPoints.push({x: 7500, y: 7500})
-  let counter = 0
+  for (let i = 0; i < info.graphPoints.length; i++) {
+    if(isCoordinateInSnowArea(info.graphPoints[i].x,info.graphPoints[i].y)[0] && info.children.find(child => child.x == info.graphPoints[i].x && child.y == info.graphPoints[i].y) != undefined){
+      info.graphPoints.splice(i,1)
+    }
+  }
   for (let i = 0; i < info.graphPoints.length; i++) {
     for (let j = 0; j < info.graphPoints.length; j++) {
       console.clear()
-      counter++
-      console.log(counter)
       const candidate = {
         x1: info.graphPoints[i].x,
         y1: info.graphPoints[i].y,
@@ -214,10 +217,13 @@ const generateGraph = () => {
         y2: info.graphPoints[j].y,
         distance: getDistance(info.graphPoints[i].x,info.graphPoints[i].y,info.graphPoints[j].x,info.graphPoints[j].y),
       }
-      if(!info.graph.find(graph => graph.x1 == candidate.x1 && graph.y1 == candidate.y1 && graph.x2 == candidate.x2 && graph.y2 == candidate.y2 ||
-        graph.x1 == candidate.x2 && graph.y1 == candidate.y2 && graph.x2 == candidate.x1 && graph.y2 == candidate.y1)){
-        info.graph.push(candidate)
+      if(!isTouchingSnowArea(candidate.x1,candidate.y1,candidate.x2,candidate.y2)[0]){
+        if(!info.graph.find(graph => graph.x1 == candidate.x1 && graph.y1 == candidate.y1 && graph.x2 == candidate.x2 && graph.y2 == candidate.y2 ||
+          graph.x1 == candidate.x2 && graph.y1 == candidate.y2 && graph.x2 == candidate.x1 && graph.y2 == candidate.y1)){
+          info.graph.push(candidate)
+        }
       }
+      console.log(info.graph.length)
     }
   }
   console.timeEnd('generateGraph')
