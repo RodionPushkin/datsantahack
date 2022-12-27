@@ -159,14 +159,15 @@ function setup() {
   let index = 0
   let interval = setInterval(() =>{
     if(index < json.length){
-      if(json[index+1]) line(json[index].x/dpi, json[index].y/dpi, json[index+1].x/dpi, json[index+1].y/dpi)
+      // if(json[index+1]) line(json[index].x/dpi, json[index].y/dpi, json[index+1].x/dpi, json[index+1].y/dpi)
+      line(json[index].x1/dpi, json[index].y1/dpi, json[index].x2/dpi, json[index].y2/dpi)
       stroke(2)
       fill("#ffffff")
       index++
     }else{
       clearInterval(interval)
     }
-  },10)
+  },1)
   for (let i = 0; i < json.length; i++) {
     if(showPoints) circle(json[i].x/dpi, json[i].y/dpi, dpi/2)
   }

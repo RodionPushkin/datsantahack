@@ -84,7 +84,11 @@ const updateSnowAreas = (snowareas = [{r: null, x: null, y: null}]) => {
       {id: 5, x: x - length, y: Math.round(y + (length / 2))},
       {id: 6, x: x - length, y: Math.round(y - (length / 2))},
     ]
+    snowareas[i].aura = snowareas[i].aura.filter(aura => aura.x <= 10000 && aura.y <= 10000 && aura.x >= 0 && aura.y >= 0)
+    snowareas[i].aura = snowareas[i].aura.filter(aura => !isCoordinateInSnowArea(aura.x,aura.y)[0])
+    snowareas[i].aura = snowareas[i].aura.filter(aura => info.children.filter(child => aura.x == child.x && aura.y == child.y).length == 0)
   }
+
   console.timeEnd('updateSnowAreas')
   return snowareas
 }
@@ -181,6 +185,44 @@ const buildBag = () => {
   // return a bag
 }
 
+const generateGraph = () => {
+  console.time('generateGraph')
+  info.graphPoints = []
+  info.graph = []
+  for (let i = 0; i < info.children.length; i++) {
+    info.graphPoints.push({x: info.children[i].x, y: info.children[i].y})
+  }
+  for (let i = 0; i < info.snowAreas.length; i++) {
+    for (let j = 0; j < info.snowAreas[i].aura.length; j++) {
+      info.graphPoints.push({x: info.snowAreas[i].aura[j].x, y: info.snowAreas[i].aura[j].y})
+    }
+  }
+  info.graphPoints.push({x: 2500, y: 2500})
+  info.graphPoints.push({x: 7500, y: 2500})
+  info.graphPoints.push({x: 2500, y: 7500})
+  info.graphPoints.push({x: 7500, y: 7500})
+  let counter = 0
+  for (let i = 0; i < info.graphPoints.length; i++) {
+    for (let j = 0; j < info.graphPoints.length; j++) {
+      console.clear()
+      counter++
+      console.log(counter)
+      const candidate = {
+        x1: info.graphPoints[i].x,
+        y1: info.graphPoints[i].y,
+        x2: info.graphPoints[j].x,
+        y2: info.graphPoints[j].y,
+        distance: getDistance(info.graphPoints[i].x,info.graphPoints[i].y,info.graphPoints[j].x,info.graphPoints[j].y),
+      }
+      if(!info.graph.find(graph => graph.x1 == candidate.x1 && graph.y1 == candidate.y1 && graph.x2 == candidate.x2 && graph.y2 == candidate.y2 ||
+        graph.x1 == candidate.x2 && graph.y1 == candidate.y2 && graph.x2 == candidate.x1 && graph.y2 == candidate.y1)){
+        info.graph.push(candidate)
+      }
+    }
+  }
+  console.timeEnd('generateGraph')
+}
+
 const createRoute = (bag) => {
 
 }
@@ -219,41 +261,10 @@ const main = async () => {
   let currentWeight = 0
   let currentVolume = 0
   let temporaryBag = []
-
+  generateGraph()
+  console.log(info.graph.length)
   for (let i = 0; i < info.gifts.length; i++) {
-    let previousRoute = listOfRoutes.length > 0 ? listOfRoutes[listOfRoutes.length - 1] : [{x: 0, y: 0}]
-    let touchFromPreviousRoute = isTouchingSnowArea(previousRoute.x, previousRoute.y, 0, 0)
-    if (currentWeight + info.gifts[i].weight > 200 || currentWeight + info.gifts[i].volume > 100) {
-      listOfBags.push(temporaryBag.reverse())
-      temporaryBag = []
-      currentWeight = 0
-      currentVolume = 0
-      // listOfRoutes.push({"x": 0, "y": 0})
-      if (touchFromPreviousRoute[0]) {
-        let routes = walkAvoidStorm(touchFromPreviousRoute[1], previousRoute)
-        // console.log(routes)
-        listOfRoutes.push(...routes)
-        previousRoute = listOfRoutes[listOfRoutes.length - 1]
-        // console.log(previousRoute)
-        touchFromPreviousRoute = isTouchingSnowArea(previousRoute.x, previousRoute.y, 0, 0)
-      }
-    }
-    currentWeight += info.gifts[i].weight
-    currentVolume += info.gifts[i].volume
 
-    if (touchFromPreviousRoute[0]) {
-      let routes = walkAvoidStorm(touchFromPreviousRoute[1], previousRoute)
-      // console.log(routes)
-      listOfRoutes.push(...routes)
-      previousRoute = listOfRoutes[listOfRoutes.length - 1]
-      // console.log(previousRoute)
-      touchFromPreviousRoute = isTouchingSnowArea(previousRoute.x, previousRoute.y, info.children[i].x, info.children[i].y)[0]
-    }
-    listOfRoutes.push({"x": info.children[i].x, "y": info.children[i].y})
-    temporaryBag.push(info.gifts[i].id)
-  }
-  if (temporaryBag.length > 0) {
-    listOfBags.push(temporaryBag)
   }
 
 
@@ -262,17 +273,17 @@ const main = async () => {
   fs.readFile('data.js', (err, data) => {
     if (err) {
       console.log(err)
-      fs.appendFile('data.js', `let json = ${JSON.stringify(listOfRoutes)}`, (err2) => {
+      fs.appendFile('data.js', `let json = ${JSON.stringify(info.graph)}`, (err2) => {
         if (err2) console.log(err2)
         console.log("saved")
       })
     } else {
       data = data.toString('utf8');
-      if (data != `let json = ${JSON.stringify(listOfRoutes)}`) {
+      if (data != `let json = ${JSON.stringify(info.graph)}`) {
         fs.unlink('data.js', function (err1) {
           if (err1) console.log(err1);
           console.log("sdfs")
-          fs.appendFile('data.js', `let json = ${JSON.stringify(listOfRoutes)}`, (err2) => {
+          fs.appendFile('data.js', `let json = ${JSON.stringify(info.graph)}`, (err2) => {
             if (err2) console.log(err2)
             console.log("saved")
           })
